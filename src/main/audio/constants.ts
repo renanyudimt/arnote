@@ -1,0 +1,6 @@
+export const SAMPLE_RATE = 24000
+export const SILENCE_THRESHOLD = 0.001
+export const SILENCE_CHECK_INTERVAL_MS = 250
+export const SILENCE_CONFIRM_MS = 3000
+export const RECOVERY_CONFIRM_MS = 1000
+export const STARTUP_GRACE_MS = 5000
