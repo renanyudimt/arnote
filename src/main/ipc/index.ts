@@ -1,10 +1,11 @@
 import type { BrowserWindow } from 'electron'
 
-import { AudioCaptureService, AudioMixer, NativeAudioCapture, isNativeAudioSupported } from '../audio'
+import { AudioCaptureService, AudioMixer, NativeAudioCapture, OutputDeviceService, isNativeAudioSupported } from '../audio'
 import { SessionStore, SettingsStore } from '../storage'
 import { OpenAIRealtimeClient, SummaryGenerator, WhisperBatchClient } from '../transcription'
 import { registerAudioHandlers } from './audioHandlers'
 import { registerNativeAudioHandlers } from './nativeAudioHandlers'
+import { registerOutputDeviceHandlers } from './outputDeviceHandlers'
 import { registerSessionHandlers } from './sessionHandlers'
 import { registerSettingsHandlers } from './settingsHandlers'
 import { registerTranscriptionHandlers } from './transcriptionHandlers'
@@ -16,6 +17,7 @@ export function registerAllHandlers(getWindow: () => BrowserWindow | null): void
   const summaryGenerator = new SummaryGenerator()
   const sessionStore = new SessionStore()
   const settingsStore = new SettingsStore()
+  const outputDeviceService = new OutputDeviceService()
 
   const nativeSupported = isNativeAudioSupported()
   const nativeCapture = new NativeAudioCapture()
@@ -38,4 +40,5 @@ export function registerAllHandlers(getWindow: () => BrowserWindow | null): void
   )
   registerSessionHandlers(sessionStore)
   registerSettingsHandlers(settingsStore)
+  registerOutputDeviceHandlers(outputDeviceService)
 }

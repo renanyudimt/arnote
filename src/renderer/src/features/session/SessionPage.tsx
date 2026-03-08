@@ -46,8 +46,12 @@ export function SessionPage(): React.JSX.Element {
   const {
     selectedMicDeviceId,
     currentSystemAudioSource,
+    outputDevices,
+    selectedOutputDeviceId,
+    isOutputLoading,
     handleMicDeviceChange,
-    handleSystemAudioSourceChange
+    handleSystemAudioSourceChange,
+    handleOutputDeviceChange
   } = useAudioDeviceHandlers()
 
   useEffect(() => {
@@ -144,8 +148,12 @@ export function SessionPage(): React.JSX.Element {
           micDeviceId={selectedMicDeviceId}
           systemAudioSource={currentSystemAudioSource}
           isNativeCapture={nativeAudioSupported}
+          outputDevices={outputDevices}
+          outputDeviceId={selectedOutputDeviceId}
+          isOutputLoading={isOutputLoading}
           onMicDeviceChange={handleMicDeviceChange}
           onSystemAudioSourceChange={handleSystemAudioSourceChange}
+          onOutputDeviceChange={handleOutputDeviceChange}
         />
       )}
 

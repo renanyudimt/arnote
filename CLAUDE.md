@@ -1,4 +1,4 @@
-# arnote — Electron Meeting Transcription App
+# Arnote — Electron Meeting Transcription App
 
 ## Commands
 
@@ -202,12 +202,12 @@ import type { Session } from '@/types/session'
 
 ```tsx
 // GOOD — always pair light + dark
-className="text-gray-900 dark:text-white"
-className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+className = 'text-gray-900 dark:text-white'
+className = 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
 
 // BAD — missing dark mode variant
-className="text-gray-900"
-className="bg-blue-100 text-blue-800"
+className = 'text-gray-900'
+className = 'bg-blue-100 text-blue-800'
 ```
 
 ## Zustand Stores

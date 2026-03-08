@@ -18,7 +18,10 @@ const api = {
     },
     startNativeCapture: (): Promise<boolean> => ipcRenderer.invoke(IPC.NATIVE_AUDIO_START),
     stopNativeCapture: (): Promise<boolean> => ipcRenderer.invoke(IPC.NATIVE_AUDIO_STOP),
-    isNativeSupported: (): Promise<boolean> => ipcRenderer.invoke(IPC.NATIVE_AUDIO_SUPPORTED)
+    isNativeSupported: (): Promise<boolean> => ipcRenderer.invoke(IPC.NATIVE_AUDIO_SUPPORTED),
+    getOutputDevices: (): Promise<unknown[]> => ipcRenderer.invoke(IPC.AUDIO_OUTPUT_DEVICES),
+    getDefaultOutputDevice: (): Promise<unknown> => ipcRenderer.invoke(IPC.AUDIO_DEFAULT_OUTPUT),
+    setOutputDevice: (id: number): Promise<void> => ipcRenderer.invoke(IPC.AUDIO_SET_OUTPUT, id)
   },
   transcription: {
     start: (mode: TranscriptionMode): Promise<boolean> =>

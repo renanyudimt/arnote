@@ -1,3 +1,4 @@
+import type { OutputDevice } from '@/types/audio'
 import type { Session, TranscriptEntry, Summary } from '@/types/session'
 
 export type TranscriptionMode = 'realtime' | 'whisper'
@@ -26,6 +27,9 @@ export const ipc = {
     startNativeCapture: (): Promise<boolean> => window.api.audio.startNativeCapture(),
     stopNativeCapture: (): Promise<boolean> => window.api.audio.stopNativeCapture(),
     isNativeSupported: (): Promise<boolean> => window.api.audio.isNativeSupported(),
+    getOutputDevices: (): Promise<OutputDevice[]> => window.api.audio.getOutputDevices(),
+    getDefaultOutputDevice: (): Promise<OutputDevice> => window.api.audio.getDefaultOutputDevice(),
+    setOutputDevice: (id: number): Promise<void> => window.api.audio.setOutputDevice(id),
     onNativeSilence: (callback: (isSilent: boolean) => void): (() => void) => {
       const channel = 'native-audio:silence'
       const handler = (_event: unknown, isSilent: boolean): void => {

@@ -22,7 +22,7 @@ export function HomePage(): React.JSX.Element {
           </Button>
           <Button onClick={() => navigate('/session')}>
             <Plus className="size-4" />
-            Start Meeting
+            New Sessions
           </Button>
         </div>
       </div>

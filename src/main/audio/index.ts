@@ -1,4 +1,5 @@
 export { AudioCaptureService } from './AudioCaptureService'
 export { AudioMixer } from './AudioMixer'
 export { NativeAudioCapture } from './NativeAudioCapture'
+export { OutputDeviceService } from './OutputDeviceService'
 export { isNativeAudioSupported } from './platformUtils'

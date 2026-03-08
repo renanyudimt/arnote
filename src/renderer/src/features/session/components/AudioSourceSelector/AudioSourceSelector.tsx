@@ -1,4 +1,4 @@
-import { Mic, Monitor } from 'lucide-react'
+import { Mic, Monitor, Volume2 } from 'lucide-react'
 
 import { Label } from '@/components/ui/label'
 import {
@@ -23,8 +23,12 @@ export function AudioSourceSelector({
   micDeviceId,
   systemAudioSource,
   isNativeCapture,
+  outputDevices,
+  outputDeviceId,
+  isOutputLoading,
   onMicDeviceChange,
-  onSystemAudioSourceChange
+  onSystemAudioSourceChange,
+  onOutputDeviceChange
 }: AudioSourceSelectorProps): React.JSX.Element {
   const { micDevices, systemAudioDevices, isLoading } = useAudioDevices()
 
@@ -37,6 +41,10 @@ export function AudioSourceSelector({
     } else {
       onSystemAudioSourceChange({ deviceId: value } as SystemAudioSource)
     }
+  }
+
+  const handleOutputChange = (value: string): void => {
+    onOutputDeviceChange(Number(value))
   }
 
   if (isLoading)
@@ -61,6 +69,32 @@ export function AudioSourceSelector({
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="flex flex-1 flex-col gap-1.5">
+        <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Volume2 className="size-3" />
+          Audio Output
+        </Label>
+        {isOutputLoading ? (
+          <div className="flex h-8 items-center text-xs text-muted-foreground">Loading...</div>
+        ) : (
+          <Select
+            value={outputDeviceId !== null ? String(outputDeviceId) : undefined}
+            onValueChange={handleOutputChange}
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Select output device" />
+            </SelectTrigger>
+            <SelectContent>
+              {outputDevices.map((device) => (
+                <SelectItem key={device.id} value={String(device.id)} className="text-xs">
+                  {device.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {!isNativeCapture && (

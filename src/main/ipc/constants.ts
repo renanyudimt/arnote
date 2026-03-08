@@ -27,5 +27,8 @@ export const IPC = {
   NATIVE_AUDIO_ERROR: 'native-audio:error',
   NATIVE_AUDIO_SUPPORTED: 'native-audio:supported',
   AUDIO_MIC_CHUNK: 'audio:mic-chunk',
+  AUDIO_OUTPUT_DEVICES: 'audio:output-devices',
+  AUDIO_DEFAULT_OUTPUT: 'audio:default-output',
+  AUDIO_SET_OUTPUT: 'audio:set-output',
   DEBUG_LOG: 'debug:log',
 } as const

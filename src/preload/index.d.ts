@@ -46,6 +46,12 @@ interface ValidationResult {
   error?: string
 }
 
+interface OutputDevice {
+  id: number
+  uid: string
+  name: string
+}
+
 interface ArnoteAPI {
   audio: {
     start: () => Promise<boolean>
@@ -57,6 +63,9 @@ interface ArnoteAPI {
     startNativeCapture: () => Promise<boolean>
     stopNativeCapture: () => Promise<boolean>
     isNativeSupported: () => Promise<boolean>
+    getOutputDevices: () => Promise<OutputDevice[]>
+    getDefaultOutputDevice: () => Promise<OutputDevice>
+    setOutputDevice: (id: number) => Promise<void>
   }
   transcription: {
     start: (mode: TranscriptionMode) => Promise<boolean>
