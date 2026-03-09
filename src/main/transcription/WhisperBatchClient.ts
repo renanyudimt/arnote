@@ -24,6 +24,8 @@ function isHallucination(text: string): boolean {
 export class WhisperBatchClient {
   private window: BrowserWindow | null = null
   private apiKey = ''
+  private baseUrl = 'https://api.openai.com'
+  private modelName = 'whisper-1'
   private chunks: Buffer[] = []
   private flushTimer: ReturnType<typeof setInterval> | null = null
   private isRunning = false
@@ -36,12 +38,24 @@ export class WhisperBatchClient {
     this.apiKey = apiKey
   }
 
+  setBaseUrl(url: string): void {
+    this.baseUrl = url
+  }
+
+  setModelName(name: string): void {
+    this.modelName = name
+  }
+
   start(): void {
-    if (this.isRunning) return
+    if (this.isRunning) {
+      logger.warn('Already running — resetting before restart')
+      this.forceStop()
+    }
     this.isRunning = true
     this.chunks = []
 
     this.flushTimer = setInterval(() => {
+      logger.debug(`Flush timer fired (${this.chunks.length} chunks pending)`)
       this.flush().catch((error) => {
         logger.error('Flush error:', error)
         this.sendErrorToRenderer(String(error))
@@ -70,9 +84,25 @@ export class WhisperBatchClient {
     logger.info('Stopped')
   }
 
+  /** Force-stop without flushing remaining chunks — used for stale state recovery */
+  private forceStop(): void {
+    this.isRunning = false
+    if (this.flushTimer) {
+      clearInterval(this.flushTimer)
+      this.flushTimer = null
+    }
+    this.chunks = []
+  }
+
   appendChunk(buffer: Buffer): void {
-    if (!this.isRunning) return
+    if (!this.isRunning) {
+      logger.warn('appendChunk called but not running — dropping chunk')
+      return
+    }
     this.chunks.push(buffer)
+    if (this.chunks.length === 1) {
+      logger.info('First audio chunk received in buffer')
+    }
   }
 
   private async flush(): Promise<void> {
@@ -103,7 +133,7 @@ export class WhisperBatchClient {
         `Content-Type: audio/wav\r\n\r\n`
     )
     const modelField = Buffer.from(
-      `\r\n--${boundary}\r\n` + `Content-Disposition: form-data; name="model"\r\n\r\n` + `whisper-1`
+      `\r\n--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\n${this.modelName}`
     )
     const languageField = Buffer.from(
       `\r\n--${boundary}\r\n` +
@@ -116,13 +146,16 @@ export class WhisperBatchClient {
 
     try {
       const text = await new Promise<string>((resolve, reject) => {
+        const headers: Record<string, string> = {
+          'Content-Type': `multipart/form-data; boundary=${boundary}`
+        }
+        if (this.apiKey) {
+          headers['Authorization'] = `Bearer ${this.apiKey}`
+        }
         const request = net.request({
           method: 'POST',
-          url: 'https://api.openai.com/v1/audio/transcriptions',
-          headers: {
-            Authorization: `Bearer ${this.apiKey}`,
-            'Content-Type': `multipart/form-data; boundary=${boundary}`
-          }
+          url: `${this.baseUrl}/v1/audio/transcriptions`,
+          headers
         })
 
         let responseData = ''

@@ -1,5 +1,11 @@
 /// <reference types="vite/client" />
 
+declare module '*?asset' {
+  const src: string
+  // eslint-disable-next-line import/no-default-export
+  export default src
+}
+
 // AudioWorklet types (available in modern browsers but not in all TS lib configs)
 declare class AudioWorkletProcessor {
   readonly port: MessagePort

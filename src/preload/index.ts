@@ -26,11 +26,17 @@ const api = {
   transcription: {
     start: (mode: TranscriptionMode): Promise<boolean> =>
       ipcRenderer.invoke(IPC.TRANSCRIPTION_START, mode),
-    stop: (): Promise<boolean> => ipcRenderer.invoke(IPC.TRANSCRIPTION_STOP)
+    stop: (): Promise<boolean> => ipcRenderer.invoke(IPC.TRANSCRIPTION_STOP),
+    pause: (): Promise<boolean> => ipcRenderer.invoke(IPC.TRANSCRIPTION_PAUSE),
+    resume: (): Promise<boolean> => ipcRenderer.invoke(IPC.TRANSCRIPTION_RESUME)
   },
   summary: {
-    generate: (transcript: unknown[]): Promise<unknown> =>
-      ipcRenderer.invoke(IPC.SUMMARY_GENERATE, transcript)
+    generate: (transcript: unknown[], language?: string): Promise<unknown> =>
+      ipcRenderer.invoke(IPC.SUMMARY_GENERATE, transcript, language)
+  },
+  curation: {
+    curate: (transcript: unknown[], language?: string, glossary?: string[]): Promise<unknown[]> =>
+      ipcRenderer.invoke(IPC.CURATION_CURATE, transcript, language, glossary)
   },
   session: {
     list: (): Promise<unknown[]> => ipcRenderer.invoke(IPC.SESSION_LIST),
@@ -49,7 +55,23 @@ const api = {
     setSystemAudioSource: (source: string): Promise<void> =>
       ipcRenderer.invoke(IPC.SETTINGS_SET_SYSTEM_AUDIO_SOURCE, source),
     validateApiKey: (key: string): Promise<unknown> =>
-      ipcRenderer.invoke(IPC.SETTINGS_VALIDATE_API_KEY, key)
+      ipcRenderer.invoke(IPC.SETTINGS_VALIDATE_API_KEY, key),
+    setWhisperModel: (model: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.SETTINGS_SET_WHISPER_MODEL, model),
+    setSummaryModel: (model: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.SETTINGS_SET_SUMMARY_MODEL, model),
+    setSummaryProvider: (provider: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.SETTINGS_SET_SUMMARY_PROVIDER, provider),
+    setCurationEnabled: (enabled: boolean): Promise<void> =>
+      ipcRenderer.invoke(IPC.SETTINGS_SET_CURATION_ENABLED, enabled),
+    setCurationProvider: (provider: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.SETTINGS_SET_CURATION_PROVIDER, provider),
+    setCurationModel: (model: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.SETTINGS_SET_CURATION_MODEL, model),
+    setCurationGlossary: (glossary: string[]): Promise<void> =>
+      ipcRenderer.invoke(IPC.SETTINGS_SET_CURATION_GLOSSARY, glossary),
+    getApiKeyStatus: (): Promise<unknown> =>
+      ipcRenderer.invoke(IPC.SETTINGS_GET_API_KEY_STATUS)
   }
 }
 

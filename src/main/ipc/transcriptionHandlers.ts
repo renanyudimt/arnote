@@ -2,13 +2,15 @@ import type { BrowserWindow } from 'electron'
 import { ipcMain } from 'electron'
 
 import { IPC } from './constants'
+import { wrapHandler } from './utils'
+import { createLogger } from '../lib/logger'
 
 import type { AudioMixer } from '../audio/AudioMixer'
-import type { SettingsStore, TranscriptionMode } from '../storage'
+import type { SettingsStore, TranscriptionMode, SummaryProviderType } from '../storage'
 import type {
   OpenAIRealtimeClient,
   WhisperBatchClient,
-  SummaryGenerator,
+  SummaryProvider,
   TranscriptEntry,
 } from '../transcription'
 
@@ -16,35 +18,42 @@ import type {
 export function registerTranscriptionHandlers(
   realtimeClient: OpenAIRealtimeClient,
   whisperClient: WhisperBatchClient,
-  summaryGenerator: SummaryGenerator,
+  summaryProviders: Record<SummaryProviderType, SummaryProvider>,
   settingsStore: SettingsStore,
   getWindow: () => BrowserWindow | null,
   audioMixer?: AudioMixer
 ): void {
+  const logger = createLogger('Transcription')
   let activeMode: TranscriptionMode | null = null
 
-  ipcMain.handle(IPC.TRANSCRIPTION_START, async (_event, mode: TranscriptionMode) => {
-    const apiKey = settingsStore.getApiKey()
-    if (!apiKey) {
-      throw new Error('OpenAI API key not configured')
-    }
-
+  ipcMain.handle(IPC.TRANSCRIPTION_START, wrapHandler(async (mode: TranscriptionMode) => {
     const window = getWindow()
     activeMode = mode
 
     if (mode === 'realtime') {
+      const apiKey = settingsStore.getApiKey()
+      if (!apiKey) throw new Error('OpenAI API key not configured')
       realtimeClient.setApiKey(apiKey)
       if (window) realtimeClient.setWindow(window)
       await realtimeClient.connect()
     } else {
+      const apiKey = settingsStore.getApiKey()
+      if (!apiKey) throw new Error('OpenAI API key not configured')
       whisperClient.setApiKey(apiKey)
+      whisperClient.setBaseUrl('https://api.openai.com')
+      whisperClient.setModelName(settingsStore.getWhisperModel())
       if (window) whisperClient.setWindow(window)
       whisperClient.start()
     }
 
     // Wire mixer to route mixed audio to the active transcription client
     if (audioMixer) {
+      let loggedFirstRoute = false
       audioMixer.setOnMixedChunk((buffer) => {
+        if (!loggedFirstRoute) {
+          loggedFirstRoute = true
+          logger.info(`First mixed chunk routed (activeMode: ${activeMode})`)
+        }
         if (activeMode === 'realtime') {
           realtimeClient.sendAudioChunk(buffer)
         } else if (activeMode === 'whisper') {
@@ -55,29 +64,50 @@ export function registerTranscriptionHandlers(
     }
 
     return true
-  })
+  }))
 
-  ipcMain.handle(IPC.TRANSCRIPTION_STOP, () => {
+  ipcMain.handle(IPC.TRANSCRIPTION_STOP, wrapHandler(() => {
     if (audioMixer) {
       audioMixer.stop()
     }
 
-    if (activeMode === 'realtime') {
-      realtimeClient.disconnect()
-    } else if (activeMode === 'whisper') {
-      whisperClient.stop()
-    }
+    // Always stop both clients to prevent stale isRunning state
+    realtimeClient.disconnect()
+    whisperClient.stop()
 
     activeMode = null
     return true
-  })
+  }))
 
-  ipcMain.handle(IPC.SUMMARY_GENERATE, async (_event, transcript: TranscriptEntry[]) => {
-    const apiKey = settingsStore.getApiKey()
-    if (!apiKey) {
-      throw new Error('OpenAI API key not configured')
+  ipcMain.handle(IPC.TRANSCRIPTION_PAUSE, wrapHandler(() => {
+    if (audioMixer) {
+      audioMixer.pause()
     }
-    summaryGenerator.setApiKey(apiKey)
-    return await summaryGenerator.generate(transcript)
-  })
+    return true
+  }))
+
+  ipcMain.handle(IPC.TRANSCRIPTION_RESUME, wrapHandler(() => {
+    if (audioMixer) {
+      audioMixer.resume()
+    }
+    return true
+  }))
+
+  ipcMain.handle(
+    IPC.SUMMARY_GENERATE,
+    wrapHandler(async (transcript: TranscriptEntry[], language?: string) => {
+      const type = settingsStore.getSummaryProvider()
+      const provider = summaryProviders[type]
+
+      if (!provider) {
+        throw new Error(`Unknown summary provider: "${type}". Available: ${Object.keys(summaryProviders).join(', ')}`)
+      }
+
+      const apiKey = settingsStore.getApiKey()
+      if (!apiKey) throw new Error('OpenAI API key not configured')
+      provider.configure(apiKey, settingsStore.getSummaryModel())
+
+      return await provider.generate(transcript, language)
+    })
+  )
 }

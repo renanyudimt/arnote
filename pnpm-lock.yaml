@@ -15,6 +15,9 @@ dependencies:
   '@electron-toolkit/utils':
     specifier: ^4.0.0
     version: 4.0.0(electron@39.8.0)
+  '@tanstack/react-query':
+    specifier: ^5.90.21
+    version: 5.90.21(react@19.2.4)
   audiotee:
     specifier: ^0.0.7
     version: 0.0.7
@@ -45,6 +48,9 @@ dependencies:
   radix-ui:
     specifier: ^1.4.3
     version: 1.4.3(@types/react-dom@19.2.3)(@types/react@19.2.14)(react-dom@19.2.4)(react@19.2.4)
+  react-hook-form:
+    specifier: ^7.71.2
+    version: 7.71.2(react@19.2.4)
   react-router-dom:
     specifier: ^7.13.1
     version: 7.13.1(react-dom@19.2.4)(react@19.2.4)
@@ -2860,6 +2866,19 @@ packages:
       tailwindcss: 4.2.1
       vite: 7.3.1(@types/node@22.19.15)
     dev: true
+
+  /@tanstack/query-core@5.90.20:
+    resolution: {integrity: sha512-OMD2HLpNouXEfZJWcKeVKUgQ5n+n3A2JFmBaScpNDUqSrQSjiveC7dKMe53uJUg1nDG16ttFPz2xfilz6i2uVg==}
+    dev: false
+
+  /@tanstack/react-query@5.90.21(react@19.2.4):
+    resolution: {integrity: sha512-0Lu6y5t+tvlTJMTO7oh5NSpJfpg/5D41LlThfepTixPYkJ0sE2Jj0m0f6yYqujBwIXlId87e234+MxG3D3g7kg==}
+    peerDependencies:
+      react: ^18 || ^19
+    dependencies:
+      '@tanstack/query-core': 5.90.20
+      react: 19.2.4
+    dev: false
 
   /@tybys/wasm-util@0.10.1:
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
@@ -6537,6 +6556,15 @@ packages:
     dependencies:
       react: 19.2.4
       scheduler: 0.27.0
+
+  /react-hook-form@7.71.2(react@19.2.4):
+    resolution: {integrity: sha512-1CHvcDYzuRUNOflt4MOq3ZM46AronNJtQ1S7tnX6YN4y72qhgiUItpacZUAQ0TyWYci3yz1X+rXaSxiuEm86PA==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      react: ^16.8.0 || ^17 || ^18 || ^19
+    dependencies:
+      react: 19.2.4
+    dev: false
 
   /react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}

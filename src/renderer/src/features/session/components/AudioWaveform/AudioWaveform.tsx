@@ -1,12 +1,10 @@
+import { cn } from '@/lib/utils'
+
+import { BAR_COUNT, MIN_HEIGHT, MAX_HEIGHT, BAR_OFFSETS, VARIANT_COLORS } from './constants'
+
 import type { AudioWaveformProps } from './types'
 
-const BAR_COUNT = 5
-const MIN_HEIGHT = 4
-const MAX_HEIGHT = 24
-
-const BAR_OFFSETS = [0.6, 1.0, 0.8, 0.9, 0.5]
-
-export function AudioWaveform({ level }: AudioWaveformProps): React.JSX.Element {
+export function AudioWaveform({ level, variant = 'system' }: AudioWaveformProps): React.JSX.Element {
   return (
     <div className="flex items-center gap-0.5">
       {BAR_OFFSETS.slice(0, BAR_COUNT).map((offset, i) => {
@@ -16,7 +14,7 @@ export function AudioWaveform({ level }: AudioWaveformProps): React.JSX.Element 
         return (
           <div
             key={i}
-            className="w-0.5 rounded-full bg-primary transition-all duration-75"
+            className={cn('w-1 rounded-full transition-all duration-75', VARIANT_COLORS[variant])}
             style={{ height: `${height}px` }}
           />
         )

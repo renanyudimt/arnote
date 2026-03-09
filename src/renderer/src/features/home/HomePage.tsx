@@ -2,15 +2,18 @@ import { useNavigate } from 'react-router-dom'
 
 import { Plus, Settings } from 'lucide-react'
 
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 
 import { SessionList, EmptyState } from './components'
+import { useSessionDelete } from './hooks/useSessionDelete'
 import { useSessions } from './hooks/useSessions'
 
 export function HomePage(): React.JSX.Element {
   const navigate = useNavigate()
   const { sessions, isLoading } = useSessions()
+  const { deleteTargetId, requestDelete, confirmDelete, cancelDelete } = useSessionDelete()
 
   return (
     <div className="mx-auto flex h-screen max-w-2xl flex-col p-6">
@@ -22,7 +25,7 @@ export function HomePage(): React.JSX.Element {
           </Button>
           <Button onClick={() => navigate('/session')}>
             <Plus className="size-4" />
-            New Sessions
+            New Session
           </Button>
         </div>
       </div>
@@ -36,9 +39,24 @@ export function HomePage(): React.JSX.Element {
         ) : sessions.length === 0 ? (
           <EmptyState />
         ) : (
-          <SessionList sessions={sessions} onSessionClick={(id) => navigate(`/session/${id}`)} />
+          <SessionList
+            sessions={sessions}
+            onSessionClick={(id) => navigate(`/session/${id}`)}
+            onDelete={requestDelete}
+          />
         )}
       </div>
+      <ConfirmDialog
+        open={deleteTargetId !== null}
+        onOpenChange={(open) => {
+          if (!open) cancelDelete()
+        }}
+        title="Delete Session?"
+        description="This action cannot be undone."
+        confirmLabel="Delete"
+        confirmVariant="destructive"
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }

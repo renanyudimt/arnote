@@ -3,6 +3,8 @@ import { net } from 'electron'
 import { formatApiError } from '../lib/apiErrors'
 import { createLogger } from '../lib/logger'
 
+import type { SummaryProvider } from './SummaryProvider'
+
 const logger = createLogger('Summary')
 
 export interface Summary {
@@ -19,24 +21,45 @@ export interface TranscriptEntry {
   speaker?: string
 }
 
-const SYSTEM_PROMPT = `You are a meeting summarizer. Analyze the meeting transcript and produce a structured summary.
+const SYSTEM_PROMPT_EN = `You are a session summarizer. Analyze the session transcript and produce a structured summary.
 
 Return a JSON object with:
-- title: A concise title for the meeting (max 60 chars)
+- title: A concise title for the session (max 60 chars)
 - keyPoints: Array of 3-7 key points discussed
 - actionItems: Array of action items identified (tasks, follow-ups, decisions)
-- fullSummary: A comprehensive 2-4 paragraph summary of the meeting
+- fullSummary: A comprehensive 2-4 paragraph summary of the session
 
 Be concise and focus on actionable information.`
 
-export class SummaryGenerator {
+const SYSTEM_PROMPT_PT = `Você é um resumidor de sessões. Analise a transcrição da sessão e produza um resumo estruturado em português.
+
+Retorne um objeto JSON com:
+- title: Um título conciso para a sessão (máx 60 caracteres)
+- keyPoints: Array de 3-7 pontos-chave discutidos
+- actionItems: Array de itens de ação identificados (tarefas, acompanhamentos, decisões)
+- fullSummary: Um resumo abrangente de 2-4 parágrafos da sessão
+
+Seja conciso e foque em informações acionáveis. Tudo deve estar em português.`
+
+const SYSTEM_PROMPTS: Record<string, string> = {
+  en: SYSTEM_PROMPT_EN,
+  pt: SYSTEM_PROMPT_PT,
+}
+
+export class SummaryGenerator implements SummaryProvider {
   private apiKey = ''
+  private modelName = 'gpt-4o'
+
+  configure(apiKey: string, model: string): void {
+    this.apiKey = apiKey
+    this.modelName = model
+  }
 
   setApiKey(apiKey: string): void {
     this.apiKey = apiKey
   }
 
-  async generate(transcript: TranscriptEntry[]): Promise<Summary> {
+  async generate(transcript: TranscriptEntry[], language = 'pt'): Promise<Summary> {
     if (!this.apiKey) {
       throw new Error('API key not configured')
     }
@@ -52,15 +75,15 @@ export class SummaryGenerator {
       .join('\n')
 
     const body = JSON.stringify({
-      model: 'gpt-4o',
+      model: this.modelName,
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: `Here is the meeting transcript:\n\n${transcriptText}` }
+        { role: 'system', content: SYSTEM_PROMPTS[language] ?? SYSTEM_PROMPTS.pt },
+        { role: 'user', content: `Here is the session transcript:\n\n${transcriptText}` }
       ],
       response_format: {
         type: 'json_schema',
         json_schema: {
-          name: 'meeting_summary',
+          name: 'session_summary',
           strict: true,
           schema: {
             type: 'object',

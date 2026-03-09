@@ -10,6 +10,7 @@ export class AudioMixer {
   private onMixedChunk: ((buffer: Buffer) => void) | null = null
   private flushTimer: ReturnType<typeof setInterval> | null = null
   private flushedFirstChunk = false
+  private paused = false
 
   appendSystemChunk(buffer: Buffer): void {
     this.systemBuffer.push(buffer)
@@ -29,6 +30,18 @@ export class AudioMixer {
     log.info('Mixer started')
   }
 
+  pause(): void {
+    this.paused = true
+    this.systemBuffer = []
+    this.micBuffer = []
+    log.info('Mixer paused')
+  }
+
+  resume(): void {
+    this.paused = false
+    log.info('Mixer resumed')
+  }
+
   stop(): void {
     if (this.flushTimer) {
       clearInterval(this.flushTimer)
@@ -37,11 +50,13 @@ export class AudioMixer {
     this.systemBuffer = []
     this.micBuffer = []
     this.flushedFirstChunk = false
+    this.paused = false
     log.info('Mixer stopped')
   }
 
   private flush(): void {
     if (!this.onMixedChunk) return
+    if (this.paused) return
 
     const systemData = this.drainBuffer(this.systemBuffer)
     const micData = this.drainBuffer(this.micBuffer)

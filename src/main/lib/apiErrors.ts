@@ -1,4 +1,25 @@
-export function formatApiError(statusCode: number, body: string): string {
+export class IpcError extends Error {
+  code: string
+
+  constructor(message: string, code: string) {
+    super(message)
+    this.name = 'IpcError'
+    this.code = code
+  }
+}
+
+export function serializeError(error: unknown): IpcError {
+  if (error instanceof Error) {
+    return new IpcError(
+      error.message,
+      error.name === 'Error' ? 'UNKNOWN_ERROR' : error.name,
+    )
+  }
+
+  return new IpcError(String(error), 'UNKNOWN_ERROR')
+}
+
+export function formatApiError(statusCode: number, body: string, provider = 'OpenAI'): string {
   const lowerBody = body.toLowerCase()
 
   if (statusCode === 401) {
@@ -7,7 +28,7 @@ export function formatApiError(statusCode: number, body: string): string {
 
   if (statusCode === 429) {
     if (lowerBody.includes('insufficient_quota') || lowerBody.includes('quota')) {
-      return 'Saldo insuficiente na OpenAI. Adicione créditos em platform.openai.com/settings/organization/billing'
+      return `Saldo insuficiente na ${provider}. Adicione créditos em platform.openai.com/settings/organization/billing`
     }
     return 'Limite de requisições atingido. Aguarde alguns segundos e tente novamente.'
   }
@@ -17,8 +38,8 @@ export function formatApiError(statusCode: number, body: string): string {
   }
 
   if (statusCode >= 500 && statusCode < 600) {
-    return `Servidor OpenAI indisponível (${statusCode}). Tente novamente em alguns instantes.`
+    return `Servidor ${provider} indisponível (${statusCode}). Tente novamente em alguns instantes.`
   }
 
-  return `Erro na API OpenAI (${statusCode}): ${body}`
+  return `Erro na API ${provider} (${statusCode}): ${body}`
 }

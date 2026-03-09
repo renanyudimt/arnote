@@ -2,6 +2,7 @@ import type { BrowserWindow } from 'electron'
 import { ipcMain } from 'electron'
 
 import { IPC } from './constants'
+import { wrapHandler } from './utils'
 import { isNativeAudioSupported } from '../audio/platformUtils'
 
 import type { AudioMixer } from '../audio/AudioMixer'
@@ -12,18 +13,23 @@ export function registerNativeAudioHandlers(
   audioMixer: AudioMixer,
   getWindow: () => BrowserWindow | null
 ): void {
-  ipcMain.handle(IPC.NATIVE_AUDIO_SUPPORTED, () => isNativeAudioSupported())
+  ipcMain.handle(IPC.NATIVE_AUDIO_SUPPORTED, wrapHandler(() => isNativeAudioSupported()))
 
-  ipcMain.handle(IPC.NATIVE_AUDIO_START, async () => {
+  ipcMain.handle(IPC.NATIVE_AUDIO_START, wrapHandler(async () => {
+    // Auto-recover from stale state (e.g., renderer reloaded without sending stop)
+    if (nativeCapture.isRunning()) {
+      await nativeCapture.stop()
+      audioMixer.stop()
+    }
     await nativeCapture.start()
     return true
-  })
+  }))
 
-  ipcMain.handle(IPC.NATIVE_AUDIO_STOP, async () => {
+  ipcMain.handle(IPC.NATIVE_AUDIO_STOP, wrapHandler(async () => {
     await nativeCapture.stop()
     audioMixer.stop()
     return true
-  })
+  }))
 
   ipcMain.on(IPC.AUDIO_MIC_CHUNK, (_event, data: Buffer | Uint8Array) => {
     const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data)

@@ -1,11 +1,13 @@
 import { useState } from 'react'
 
-import { useSettings } from './useSettings'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 type ValidationState = 'idle' | 'loading' | 'valid' | 'invalid'
 
 interface UseApiKeyInputReturn {
   keyInput: string
+  maskedApiKey: string
+  hasApiKey: boolean
   showKey: boolean
   validationState: ValidationState
   validationError: string
@@ -16,21 +18,16 @@ interface UseApiKeyInputReturn {
 }
 
 export function useApiKeyInput(): UseApiKeyInputReturn {
-  const { apiKey, isLoaded, setApiKey, validateApiKey } = useSettings()
+  const { hasApiKey, maskedApiKey, setApiKey, validateApiKey } = useSettingsStore()
 
   const [keyInput, setKeyInput] = useState('')
   const [showKey, setShowKey] = useState(false)
   const [validationState, setValidationState] = useState<ValidationState>('idle')
   const [validationError, setValidationError] = useState('')
-  const [keyInitialized, setKeyInitialized] = useState(false)
-
-  if (isLoaded && !keyInitialized) {
-    setKeyInput(apiKey)
-    setKeyInitialized(true)
-  }
 
   const handleSaveKey = async (): Promise<void> => {
     await setApiKey(keyInput.trim())
+    setKeyInput('')
     setValidationState('idle')
   }
 
@@ -45,6 +42,7 @@ export function useApiKeyInput(): UseApiKeyInputReturn {
       setValidationState('valid')
       setValidationError('')
       await setApiKey(key)
+      setKeyInput('')
     } else {
       setValidationState('invalid')
       setValidationError(result.error ?? 'Invalid API key')
@@ -60,6 +58,8 @@ export function useApiKeyInput(): UseApiKeyInputReturn {
 
   return {
     keyInput,
+    maskedApiKey,
+    hasApiKey,
     showKey,
     validationState,
     validationError,

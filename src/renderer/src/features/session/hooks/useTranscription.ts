@@ -12,18 +12,23 @@ export function useTranscription(): {
   entries: TranscriptEntry[]
   error: string | null
   isMicMuted: boolean
+  isPaused: boolean
   systemAudioSilent: boolean
   audioLevel: number
+  micLevel: number
   isNativeCapture: boolean
   start: (options?: StartOptions) => Promise<void>
   stop: () => Promise<void>
   toggleMicMute: () => void
+  togglePause: () => void
 } {
   const { isRecording, entries, error, setRecording, addEntry, setError } = useTranscriptionStore()
   const audioCaptureRef = useRef<AudioCaptureRenderer | null>(null)
   const [isMicMuted, setIsMicMuted] = useState(false)
+  const [isPaused, setIsPaused] = useState(false)
   const [systemAudioSilent, setSystemAudioSilent] = useState(false)
   const [audioLevel, setAudioLevel] = useState(0)
+  const [micLevel, setMicLevel] = useState(0)
   const [isNativeCapture, setIsNativeCapture] = useState(false)
   const isMicMutedRef = useRef(false)
   const isNativeCaptureRef = useRef(false)
@@ -63,6 +68,11 @@ export function useTranscription(): {
 
   // Cleanup on unmount
   useEffect(() => () => {
+      const { isRecording: wasRecording } = useTranscriptionStore.getState()
+      if (wasRecording) {
+        ipc.transcription.stop().catch(console.error)
+      }
+
       if (audioCaptureRef.current) {
         audioCaptureRef.current.stop().catch(console.error)
         audioCaptureRef.current = null
@@ -76,16 +86,16 @@ export function useTranscription(): {
     async (options?: StartOptions) => {
       setError(null)
 
-      const { apiKey, transcriptionMode, isLoaded, load } = useSettingsStore.getState()
+      const { hasApiKey, transcriptionMode, isLoaded, load } = useSettingsStore.getState()
       if (!isLoaded) await load()
 
-      const currentApiKey = isLoaded ? apiKey : useSettingsStore.getState().apiKey
-      if (!currentApiKey) {
+      const mode = isLoaded ? transcriptionMode : useSettingsStore.getState().transcriptionMode
+
+      const currentHasKey = isLoaded ? hasApiKey : useSettingsStore.getState().hasApiKey
+      if (!currentHasKey) {
         setError('OpenAI API key not configured. Go to Settings to add your key.')
         return
       }
-
-      const mode = isLoaded ? transcriptionMode : useSettingsStore.getState().transcriptionMode
 
       const nativeSupported = await ipc.audio.isNativeSupported()
 
@@ -109,7 +119,8 @@ export function useTranscription(): {
             onChunk: () => {},
             onMicChunk: (buffer) => {
               ipc.audio.sendMicChunk(buffer)
-            }
+            },
+            onMicLevel: (level) => setMicLevel(level)
           })
 
           try {
@@ -174,8 +185,10 @@ export function useTranscription(): {
 
     setRecording(false)
     setIsMicMuted(false)
+    setIsPaused(false)
     setSystemAudioSilent(false)
     setAudioLevel(0)
+    setMicLevel(0)
     setIsNativeCapture(false)
     isMicMutedRef.current = false
   }, [setRecording])
@@ -189,5 +202,15 @@ export function useTranscription(): {
     }
   }, [])
 
-  return { isRecording, entries, error, isMicMuted, systemAudioSilent, audioLevel, isNativeCapture, start, stop, toggleMicMute }
+  const togglePause = useCallback(async () => {
+    if (isPaused) {
+      await ipc.transcription.resume()
+      setIsPaused(false)
+    } else {
+      await ipc.transcription.pause()
+      setIsPaused(true)
+    }
+  }, [isPaused])
+
+  return { isRecording, entries, error, isMicMuted, isPaused, systemAudioSilent, audioLevel, micLevel, isNativeCapture, start, stop, toggleMicMute, togglePause }
 }

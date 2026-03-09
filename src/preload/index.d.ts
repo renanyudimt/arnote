@@ -34,11 +34,26 @@ interface Session {
   filePath: string | null
 }
 
+type SummaryProviderType = 'openai'
+type CurationProviderType = 'openai'
+
+interface ApiKeyStatus {
+  hasKey: boolean
+  maskedKey: string
+}
+
 interface Settings {
-  openaiApiKey: string
+  hasApiKey: boolean
   transcriptionMode: TranscriptionMode
   selectedMicDeviceId: string
   systemAudioSource: string
+  whisperModel: string
+  summaryModel: string
+  summaryProvider: SummaryProviderType
+  curationEnabled: boolean
+  curationProvider: CurationProviderType
+  curationModel: string
+  curationGlossary: string[]
 }
 
 interface ValidationResult {
@@ -70,9 +85,14 @@ interface ArnoteAPI {
   transcription: {
     start: (mode: TranscriptionMode) => Promise<boolean>
     stop: () => Promise<boolean>
+    pause: () => Promise<boolean>
+    resume: () => Promise<boolean>
   }
   summary: {
-    generate: (transcript: TranscriptEntry[]) => Promise<Summary>
+    generate: (transcript: TranscriptEntry[], language?: string) => Promise<Summary>
+  }
+  curation: {
+    curate: (transcript: TranscriptEntry[], language?: string, glossary?: string[]) => Promise<TranscriptEntry[]>
   }
   session: {
     list: () => Promise<Session[]>
@@ -88,6 +108,14 @@ interface ArnoteAPI {
     setMicDevice: (deviceId: string) => Promise<void>
     setSystemAudioSource: (source: string) => Promise<void>
     validateApiKey: (key: string) => Promise<ValidationResult>
+    setWhisperModel: (model: string) => Promise<void>
+    setSummaryModel: (model: string) => Promise<void>
+    setSummaryProvider: (provider: SummaryProviderType) => Promise<void>
+    setCurationEnabled: (enabled: boolean) => Promise<void>
+    setCurationProvider: (provider: CurationProviderType) => Promise<void>
+    setCurationModel: (model: string) => Promise<void>
+    setCurationGlossary: (glossary: string[]) => Promise<void>
+    getApiKeyStatus: () => Promise<ApiKeyStatus>
   }
 }
 

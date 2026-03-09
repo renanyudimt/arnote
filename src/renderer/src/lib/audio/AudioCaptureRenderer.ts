@@ -18,6 +18,7 @@ interface AudioCaptureOptions {
   onMicChunk?: (buffer: ArrayBuffer) => void
   onSystemAudioSilent?: (isSilent: boolean) => void
   onAudioLevel?: (level: number) => void
+  onMicLevel?: (level: number) => void
 }
 
 export class AudioCaptureRenderer {
@@ -29,16 +30,20 @@ export class AudioCaptureRenderer {
   private onMicChunk?: (buffer: ArrayBuffer) => void
   private onSystemAudioSilent?: (isSilent: boolean) => void
   private onAudioLevel?: (level: number) => void
+  private onMicLevel?: (level: number) => void
   private _systemAudioAvailable = false
   private silenceCheckInterval: ReturnType<typeof setInterval> | null = null
   private analyserNode: AnalyserNode | null = null
   private audioLevelRafId: number | null = null
+  private micAnalyserNode: AnalyserNode | null = null
+  private micLevelRafId: number | null = null
 
   constructor(options: AudioCaptureOptions) {
     this.onChunk = options.onChunk
     this.onMicChunk = options.onMicChunk
     this.onSystemAudioSilent = options.onSystemAudioSilent
     this.onAudioLevel = options.onAudioLevel
+    this.onMicLevel = options.onMicLevel
   }
 
   get systemAudioAvailable(): boolean {
@@ -200,6 +205,14 @@ export class AudioCaptureRenderer {
       this.micGainNode = this.audioContext.createGain()
       micSource.connect(this.micGainNode)
       this.micGainNode.connect(workletNode)
+
+      // Connect analyser directly to micSource (bypasses gain) so it reads raw level regardless of mute
+      if (this.onMicLevel) {
+        this.micAnalyserNode = this.audioContext.createAnalyser()
+        this.micAnalyserNode.fftSize = 2048
+        micSource.connect(this.micAnalyserNode)
+        this.startMicLevelLoop()
+      }
     } catch (error) {
       console.warn('Microphone capture failed:', error)
     }
@@ -253,10 +266,41 @@ export class AudioCaptureRenderer {
     this.audioLevelRafId = requestAnimationFrame(tick)
   }
 
+  private startMicLevelLoop(): void {
+    if (!this.micAnalyserNode || !this.onMicLevel) return
+
+    const bufferLength = this.micAnalyserNode.fftSize
+    const dataArray = new Float32Array(bufferLength)
+
+    const tick = (): void => {
+      if (!this.micAnalyserNode) return
+
+      this.micAnalyserNode.getFloatTimeDomainData(dataArray)
+
+      let sumSquares = 0
+      for (let i = 0; i < bufferLength; i++) {
+        sumSquares += dataArray[i] * dataArray[i]
+      }
+      const rms = Math.sqrt(sumSquares / bufferLength)
+
+      const level = Math.min(1, rms / 0.15)
+      this.onMicLevel?.(level)
+
+      this.micLevelRafId = requestAnimationFrame(tick)
+    }
+
+    this.micLevelRafId = requestAnimationFrame(tick)
+  }
+
   async stop(): Promise<void> {
     if (this.audioLevelRafId !== null) {
       cancelAnimationFrame(this.audioLevelRafId)
       this.audioLevelRafId = null
+    }
+
+    if (this.micLevelRafId !== null) {
+      cancelAnimationFrame(this.micLevelRafId)
+      this.micLevelRafId = null
     }
 
     if (this.silenceCheckInterval) {
@@ -265,6 +309,7 @@ export class AudioCaptureRenderer {
     }
 
     this.analyserNode = null
+    this.micAnalyserNode = null
 
     if (this.systemStream) {
       this.systemStream.getTracks().forEach((track) => track.stop())

@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 
+import { IPC } from '../../../../../preload/constants'
+
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
 export interface LogEntry {
@@ -28,9 +30,9 @@ export function useDevLogs(): {
       })
     }
 
-    window.electron.ipcRenderer.on('debug:log', handler)
+    window.electron.ipcRenderer.on(IPC.DEBUG_LOG, handler)
     return () => {
-      window.electron.ipcRenderer.removeListener('debug:log', handler)
+      window.electron.ipcRenderer.removeListener(IPC.DEBUG_LOG, handler)
     }
   }, [])
 

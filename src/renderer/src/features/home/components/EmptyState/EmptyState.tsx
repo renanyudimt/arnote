@@ -8,7 +8,7 @@ export function EmptyState(): React.JSX.Element {
       </div>
       <div>
         <h3 className="text-lg font-semibold">No sessions yet</h3>
-        <p className="text-sm text-muted-foreground">Start a meeting to begin transcribing</p>
+        <p className="text-sm text-muted-foreground">Start a session to begin transcribing</p>
       </div>
     </div>
   )

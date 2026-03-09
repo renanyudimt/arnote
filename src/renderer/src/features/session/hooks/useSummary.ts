@@ -7,15 +7,15 @@ import type { TranscriptEntry, Summary } from '@/types/session'
 export function useSummary(): {
   summary: Summary | null
   isSummarizing: boolean
-  generate: (transcript: TranscriptEntry[]) => Promise<void>
+  generate: (transcript: TranscriptEntry[], language?: string) => Promise<void>
 } {
   const { summary, isSummarizing, setSummary, setSummarizing } = useTranscriptionStore()
 
   const generate = useCallback(
-    async (transcript: TranscriptEntry[]) => {
+    async (transcript: TranscriptEntry[], language?: string) => {
       setSummarizing(true)
       try {
-        const result = await ipc.summary.generate(transcript)
+        const result = await ipc.summary.generate(transcript, language)
         setSummary(result)
       } catch (error) {
         console.error('Failed to generate summary:', error)

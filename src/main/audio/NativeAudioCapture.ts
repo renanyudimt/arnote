@@ -52,7 +52,8 @@ export class NativeAudioCapture extends EventEmitter {
 
   async start(): Promise<void> {
     if (this.audioTee) {
-      throw new Error('NativeAudioCapture is already running')
+      log.warn('AudioTee still referenced from previous session — stopping first')
+      await this.stop()
     }
 
     log.info('Starting AudioTee...')

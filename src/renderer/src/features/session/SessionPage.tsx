@@ -12,13 +12,11 @@ import { useTranscriptionStore } from '@/stores/transcriptionStore'
 import {
   TranscriptView,
   MeetingControls,
-  SummaryPanel,
   StopConfirmDialog,
   AudioSourceSelector
 } from './components'
 import { useAudioDeviceHandlers } from './hooks/useAudioDeviceHandlers'
 import { useSessionCompletion } from './hooks/useSessionCompletion'
-import { useSummary } from './hooks/useSummary'
 import { useTranscription } from './hooks/useTranscription'
 
 export function SessionPage(): React.JSX.Element {
@@ -28,21 +26,23 @@ export function SessionPage(): React.JSX.Element {
     entries,
     error,
     isMicMuted,
+    isPaused,
     systemAudioSilent,
     audioLevel,
+    micLevel,
     isNativeCapture,
     start,
     stop,
-    toggleMicMute
+    toggleMicMute,
+    togglePause
   } = useTranscription()
-  const { summary, isSummarizing, generate } = useSummary()
   const reset = useTranscriptionStore((s) => s.reset)
   const [silenceWarningDismissed, setSilenceWarningDismissed] = useState(false)
   const [nativeAudioSupported, setNativeAudioSupported] = useState(false)
 
-  const { apiKey, isLoaded, load } = useSettingsStore()
-  const { showStopDialog, setShowStopDialog, sessionSaved, handleStop, handleConfirmStop } =
-    useSessionCompletion({ stop, generate })
+  const { hasApiKey: hasKey, isLoaded, load } = useSettingsStore()
+  const { showStopDialog, setShowStopDialog, handleStop, handleConfirmStop } =
+    useSessionCompletion({ stop })
   const {
     selectedMicDeviceId,
     currentSystemAudioSource,
@@ -62,9 +62,13 @@ export function SessionPage(): React.JSX.Element {
     void ipc.audio.isNativeSupported().then(setNativeAudioSupported)
   }, [])
 
-  const hasApiKey = isLoaded && apiKey.length > 0
+  const hasApiKey = isLoaded && hasKey
 
   const handleBack = (): void => {
+    if (isRecording || isPaused) {
+      handleStop()
+      return
+    }
     reset()
     void navigate('/')
   }
@@ -76,11 +80,11 @@ export function SessionPage(): React.JSX.Element {
           <ArrowLeft className="size-4" />
         </Button>
         <h1 className="text-lg font-semibold">
-          {isRecording ? 'Recording...' : sessionSaved ? 'Session Saved' : 'New Session'}
+          {isRecording ? (isPaused ? 'Paused' : 'Recording...') : 'New Session'}
         </h1>
       </div>
 
-      {!hasApiKey && !isRecording && !sessionSaved && (
+      {!hasApiKey && !isRecording && (
         <div className="mx-4 mt-4 flex items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
           <AlertTriangle className="size-4 shrink-0" />
           <span>
@@ -132,18 +136,10 @@ export function SessionPage(): React.JSX.Element {
       )}
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        {summary ? (
-          <SummaryPanel summary={summary} />
-        ) : isSummarizing ? (
-          <div className="flex flex-1 items-center justify-center">
-            <p className="text-muted-foreground">Generating summary...</p>
-          </div>
-        ) : (
-          <TranscriptView entries={entries} />
-        )}
+        <TranscriptView entries={entries} />
       </div>
 
-      {!isRecording && !sessionSaved && (
+      {!isRecording && (
         <AudioSourceSelector
           micDeviceId={selectedMicDeviceId}
           systemAudioSource={currentSystemAudioSource}
@@ -157,22 +153,23 @@ export function SessionPage(): React.JSX.Element {
         />
       )}
 
-      {!sessionSaved && (
-        <MeetingControls
-          isRecording={isRecording}
-          isMicMuted={isMicMuted}
-          audioLevel={audioLevel}
-          onStart={() => {
-            setSilenceWarningDismissed(false)
-            void start({
-              micDeviceId: selectedMicDeviceId || undefined,
-              systemAudioSource: currentSystemAudioSource
-            })
-          }}
-          onStop={handleStop}
-          onToggleMicMute={toggleMicMute}
-        />
-      )}
+      <MeetingControls
+        isRecording={isRecording}
+        isMicMuted={isMicMuted}
+        isPaused={isPaused}
+        audioLevel={audioLevel}
+        micLevel={micLevel}
+        onStart={() => {
+          setSilenceWarningDismissed(false)
+          void start({
+            micDeviceId: selectedMicDeviceId || undefined,
+            systemAudioSource: currentSystemAudioSource
+          })
+        }}
+        onStop={handleStop}
+        onToggleMicMute={toggleMicMute}
+        onTogglePause={() => void togglePause()}
+      />
 
       <StopConfirmDialog
         open={showStopDialog}
